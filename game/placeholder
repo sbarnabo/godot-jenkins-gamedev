@@ -1,1 +1,33 @@
+extends Node
 
+# Main Game Framework for a LEGO-style Game in Godot
+# Handles scene loading, input management, and basic game mechanics
+
+var player_scene = preload("res://scenes/player.tscn")
+var world_scene = preload("res://scenes/world.tscn")
+var ui_scene = preload("res://scenes/ui.tscn")
+
+func _ready():
+    print("Game Starting...")
+    add_child(world_scene.instance())
+    add_child(player_scene.instance())
+    add_child(ui_scene.instance())
+
+func _process(delta):
+    _handle_input()
+
+func _handle_input():
+    if Input.is_action_just_pressed("ui_cancel"):
+        get_tree().quit()
+
+# Placeholder for player interactions
+func on_player_interact():
+    print("Player interacted with an object!")
+
+# Placeholder for block placement logic
+func place_block(position, block_type):
+    print("Placing block at: ", position, " Type: ", block_type)
+
+# Placeholder for block destruction logic
+func remove_block(position):
+    print("Removing block at: ", position)
