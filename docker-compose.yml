@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  godot:
+    image: barichello/godot-ci:latest
+    container_name: godot_dev
+    working_dir: /game
+    volumes:
+      - ./game:/game  # Mount project folder
+    environment:
+      - DISPLAY=host.docker.internal:0  # Use Windows X Server for GUI
+    command: godot --editor
+    network_mode: "host"
+    depends_on:
+      - gitea
+
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    restart: always
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=db:5432
+      - GITEA__database__NAME=gitea
+      - GITEA__database__USER=gitea
+      - GITEA__database__PASSWD=gitea_password
+    volumes:
+      - ./gitea/data:/data
+    ports:
+      - "3000:3000"  # Web UI
+      - "2222:22"    # SSH for Git
+    depends_on:
+      - db
+
+  db:
+    image: postgres:latest
+    container_name: gitea_db
+    restart: always
+    environment:
+      - POSTGRES_USER=gitea
+      - POSTGRES_PASSWORD=gitea_password
+      - POSTGRES_DB=gitea
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer_data:/data
+    ports:
+      - "9000:9000"  # Portainer web UI
+    depends_on:
+      - godot
+      - gitea
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    restart: always
+    user: root
+    privileged: true
+    ports:
+      - "8080:8080"  # Web UI
+      - "50000:50000"  # For Jenkins agents
+    volumes:
+      - ./jenkins_data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock  # Enable Jenkins to control Docker
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false  # Skip setup wizard
+    depends_on:
+      - gitea
